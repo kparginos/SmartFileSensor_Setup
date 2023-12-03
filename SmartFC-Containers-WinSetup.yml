@@ -1,0 +1,65 @@
+version: '3'
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    restart: always
+    container_name: smartfile_scanner_db
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: admin!@#123
+    volumes:
+      - type: bind
+        source: c:/smartfile_scanner/data
+        target: /var/opt/mssql/data
+    networks:
+      smartfile_scanner_network:
+    ports:
+      - 1435:1433
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P admin!@#123 -Q "Select Count(*) From master.sys.databases" || exit 1
+      interval: 30s
+      retries: 5
+      start_period: 15s
+      timeout: 60s
+
+  smartfile_scanner_configapp:
+    image: kparginos/smartfilescannerconfigapp:1.0.0
+    restart: always
+    container_name: smartfile_scanner_configapp
+    volumes:
+      - type: bind
+        source: c:/smartfile_scanner/logs
+        target: /app/logs
+    networks:
+      - smartfile_scanner_network
+    ports:
+      - 7500:80
+    depends_on:
+      db:
+        condition: service_healthy
+
+  smartfile_scanner_webapp:
+    image: kparginos/smartfilescannerwebapp:1.0.0
+    restart: always
+    container_name: smartfile_scanner_webapp
+    volumes:
+      - type: bind
+        source: c:/smartfile_scanner/logs
+        target: /app/logs
+      - type: bind
+        source: c:/SourceBucket
+        target: /app/SourceBucket
+      - type: bind
+        source: c:/TargetBucket
+        target: /app/TargetBucket
+    networks:
+      - smartfile_scanner_network
+    ports:
+      - 7501:80
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  smartfile_scanner_network:
