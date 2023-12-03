@@ -10,7 +10,7 @@ This setup will involve the usage of three(3) different containers under Docker-
 
 * Current release v1.0.0
 
-* <p>
+<p>
 <details><summary>How to update the container on a host machine</summary>
 
 <p>
